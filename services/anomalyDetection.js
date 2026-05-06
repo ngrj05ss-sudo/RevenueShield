@@ -141,8 +141,10 @@ async function runAnomalyDetection(windowDays = 7) {
     // Spike detection (compare recent to historical)
     const historical = historicalByCreator[creatorId];
     if (historical) {
-      const viewsSpike = detectSpike(recent.views, historical.views);
-      const likesSpike = detectSpike(recent.likes, historical.likes);
+      const recentViewsAvg = recent.views / (recent.count || 1);
+      const recentLikesAvg = recent.likes / (recent.count || 1);
+      const viewsSpike = detectSpike(recentViewsAvg, historical.views);
+      const likesSpike = detectSpike(recentLikesAvg, historical.likes);
       if (viewsSpike.spiked) {
         reasons.push(`Sudden views spike (${viewsSpike.ratio.toFixed(1)}x normal)`);
         maxZScore = Math.max(maxZScore, viewsSpike.ratio);
