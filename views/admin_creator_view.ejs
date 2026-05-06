@@ -1,0 +1,271 @@
+<%- include('partials/header') %>
+
+<div class="mb-6 animate-fade-in">
+  <a href="/dashboard/admin?admin=true" class="text-sm text-surface-400 hover:text-primary-400 transition-colors flex items-center gap-1">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+    Back to Admin Center
+  </a>
+</div>
+
+<!-- Admin Monitoring Header -->
+<div class="glass-card p-6 mb-8 border-l-4 border-primary-500">
+  <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+    <div class="flex items-center gap-4">
+      <div class="w-16 h-16 rounded-2xl bg-surface-900 border border-surface-800 flex items-center justify-center text-2xl font-bold text-white shadow-xl">
+        <%= creator.name.charAt(0) %>
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold text-white"><%= creator.name %> <span class="text-xs font-normal text-surface-500 ml-2">ID: <%= creator._id %></span></h1>
+        <div class="flex items-center gap-2 mt-1">
+          <span class="badge-<%= creator.status === 'active' ? 'success' : 'danger' %>"><%= creator.status %></span>
+          <span class="text-xs text-surface-500"><%= creator.email %></span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="flex items-center gap-8">
+      <div class="text-center">
+        <p class="text-[10px] text-surface-500 uppercase tracking-widest mb-1">Trust Score</p>
+        <p class="text-2xl font-bold <%= creator.trustScore > 80 ? 'text-emerald-400' : 'text-amber-400' %>"><%= creator.trustScore %></p>
+      </div>
+      <div class="text-center">
+        <p class="text-[10px] text-surface-500 uppercase tracking-widest mb-1">Lifetime Payout</p>
+        <p class="text-2xl font-bold text-white">$<%= creator.totalEarnings.toLocaleString() %></p>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Admin Control Panel -->
+<div class="glass-card p-6 mb-8 border-red-500/30 bg-red-500/5">
+  <h2 class="section-title text-red-400 mb-4 flex items-center gap-2">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+    Administrative Controls
+  </h2>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+    <div>
+      <label class="block text-xs font-semibold text-surface-400 uppercase mb-1.5 ml-1">Malicious Activity Score (0-100)</label>
+      <input type="number" id="malicious-score" value="<%= creator.maliciousScore %>" min="0" max="100" class="input-field border-red-500/20 focus:border-red-500">
+    </div>
+    <div class="flex items-center gap-4 h-12 px-4 bg-surface-900/50 rounded-xl border border-surface-800">
+      <span class="text-xs font-semibold text-surface-400 uppercase">Revenue Status</span>
+      <div class="flex items-center gap-2">
+        <span class="text-xs <%= creator.isFrozen ? 'text-red-400' : 'text-emerald-400' %> font-bold uppercase"><%= creator.isFrozen ? 'Frozen' : 'Active' %></span>
+        <button onclick="toggleFreeze()" class="p-1 rounded-lg hover:bg-surface-800 transition-colors">
+          <div class="w-10 h-5 bg-surface-700 rounded-full p-1 flex <%= creator.isFrozen ? 'justify-end' : 'justify-start' %>">
+            <div class="w-3 h-3 bg-white rounded-full"></div>
+          </div>
+        </button>
+      </div>
+    </div>
+    <div class="flex flex-col gap-2">
+      <button onclick="runAutoAudit()" class="btn-primary py-3 bg-indigo-600 hover:bg-indigo-500 shadow-indigo-900/30 flex items-center justify-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        Run AI Auto-Audit
+      </button>
+      <button onclick="updateCreatorStatus()" class="btn-primary py-3 bg-red-600 hover:bg-red-500 shadow-red-900/30">
+        Apply Manual Changes
+      </button>
+    </div>
+  </div>
+  <div id="audit-recommendation" class="mt-4 p-4 rounded-xl bg-surface-900 border border-surface-800 hidden animate-fade-in">
+    <div class="flex items-center gap-3">
+      <div id="recommendation-icon" class="w-8 h-8 rounded-lg flex items-center justify-center text-white"></div>
+      <div>
+        <p class="text-[10px] text-surface-500 uppercase font-bold tracking-tighter">Audit Result & Recommendation</p>
+        <p id="recommendation-text" class="text-sm font-semibold text-white"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+async function runAutoAudit() {
+  const btn = event.currentTarget;
+  const originalText = btn.innerHTML;
+  btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Analyzing...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/anomalies/audit/<%= creator._id %>', { method: 'POST' });
+    const data = await res.json();
+    
+    if (data.success) {
+      document.getElementById('malicious-score').value = data.maliciousScore;
+      const recBox = document.getElementById('audit-recommendation');
+      const recText = document.getElementById('recommendation-text');
+      const recIcon = document.getElementById('recommendation-icon');
+      
+      recBox.classList.remove('hidden');
+      recText.innerText = data.recommendation;
+      
+      if (data.maliciousScore > 75) {
+        recIcon.className = 'w-8 h-8 rounded-lg flex items-center justify-center text-white bg-red-600';
+        recIcon.innerHTML = '⚠️';
+      } else if (data.maliciousScore > 50) {
+        recIcon.className = 'w-8 h-8 rounded-lg flex items-center justify-center text-white bg-amber-500';
+        recIcon.innerHTML = '🔎';
+      } else {
+        recIcon.className = 'w-8 h-8 rounded-lg flex items-center justify-center text-white bg-emerald-500';
+        recIcon.innerHTML = '✅';
+      }
+    }
+  } catch (err) {
+    alert('Audit failed');
+  } finally {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  }
+}
+
+async function updateCreatorStatus() {
+  const maliciousScore = document.getElementById('malicious-score').value;
+  const currentFrozenState = <%- JSON.stringify(creator.isFrozen) %>;
+  
+  try {
+    const res = await fetch('/api/creators/<%= creator._id %>/status', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ maliciousScore })
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert('Status updated successfully!');
+      location.reload();
+    }
+  } catch (err) {
+    alert('Failed to update status');
+  }
+}
+
+async function toggleFreeze() {
+  const newFrozenState = !<%- JSON.stringify(creator.isFrozen) %>;
+  try {
+    const res = await fetch('/api/creators/<%= creator._id %>/status', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isFrozen: newFrozenState })
+    });
+    const data = await res.json();
+    if (data.success) {
+      location.reload();
+    }
+  } catch (err) {
+    alert('Failed to toggle freeze');
+  }
+}
+</script>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+  <!-- Investigation Metrics -->
+  <div class="lg:col-span-2 space-y-6">
+    <div class="glass-card p-6">
+      <h2 class="section-title mb-4">Detailed Engagement Drill-Down</h2>
+      <div class="h-80"><canvas id="adminDrillDownChart"></canvas></div>
+    </div>
+
+    <div class="glass-card p-6">
+      <h2 class="section-title mb-4">Historical Engagement Log (Raw)</h2>
+      <div class="overflow-x-auto">
+        <table class="data-table text-xs">
+          <thead>
+            <tr><th>Timestamp</th><th>Views</th><th>Likes</th><th>Shares</th><th>Watch Time</th><th>Ratio (L/V)</th></tr>
+          </thead>
+          <tbody>
+            <% engagements.forEach(function(e) { %>
+            <tr>
+              <td class="text-surface-500"><%= new Date(e.timestamp).toLocaleString() %></td>
+              <td class="font-mono"><%= e.views.toLocaleString() %></td>
+              <td class="font-mono"><%= e.likes.toLocaleString() %></td>
+              <td class="font-mono"><%= e.shares.toLocaleString() %></td>
+              <td class="font-mono"><%= (e.watchTime / 60).toFixed(1) %>h</td>
+              <td class="font-mono <%= (e.likes / (e.views || 1)) > 0.5 ? 'text-red-400 font-bold' : '' %>">
+                <%= (e.likes / (e.views || 1) * 100).toFixed(1) %>%
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Anomaly History & Resolution -->
+  <div class="space-y-6">
+    <div class="glass-card p-6 border-red-500/20 bg-red-500/5">
+      <h2 class="section-title text-red-400 mb-4">Anomaly Logs</h2>
+      <div class="space-y-4">
+        <% if (anomalies.length === 0) { %>
+          <p class="text-surface-500 text-center py-6 text-sm italic">Clean record. No anomalies detected.</p>
+        <% } %>
+        <% anomalies.forEach(function(a) { %>
+          <div class="p-4 rounded-xl bg-surface-950/80 border border-red-500/30">
+            <div class="flex items-center justify-between mb-2">
+              <span class="badge-<%= a.severity === 'critical' ? 'danger' : 'warning' %> text-[10px]"><%= a.severity %></span>
+              <span class="text-[10px] text-surface-500"><%= new Date(a.createdAt).toLocaleDateString() %></span>
+            </div>
+            <p class="text-xs text-white leading-relaxed mb-3"><%= a.reason %></p>
+            <div class="grid grid-cols-2 gap-2 text-[9px] text-surface-400 bg-surface-900 p-2 rounded-lg">
+              <div>Z-Views: <span class="text-white"><%= a.metrics.zScoreViews %></span></div>
+              <div>Z-Likes: <span class="text-white"><%= a.metrics.zScoreLikes %></span></div>
+              <div>L/V Ratio: <span class="text-white"><%= (a.metrics.likesViewsRatio * 100).toFixed(1) %>%</span></div>
+              <div>Score: <span class="text-red-400 font-bold"><%= a.anomalyScore %></span></div>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+
+    <div class="glass-card p-6">
+      <h2 class="section-title mb-4">Payout Analysis</h2>
+      <div class="space-y-3">
+        <% creatorPayouts.slice(0, 5).forEach(function(p) { %>
+          <div class="flex items-center justify-between p-3 bg-surface-900 rounded-xl border border-surface-800">
+            <div>
+              <p class="text-xs font-bold text-white">$<%= p.payout.toLocaleString() %></p>
+              <p class="text-[10px] text-surface-500"><%= new Date(p.date).toLocaleDateString() %></p>
+            </div>
+            <div class="text-right">
+              <p class="text-[10px] text-surface-400">Pool Share: <%= p.percentage %>%</p>
+              <% if (p.penaltyApplied > 0) { %>
+                <p class="text-[10px] text-red-400 font-bold">Penalty: -<%= p.penaltyApplied %>%</p>
+              <% } %>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script id="drilldown-data" type="application/json"><%- JSON.stringify(engagements) %></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const raw = JSON.parse(document.getElementById('drilldown-data').textContent);
+  const data = raw.reverse();
+  const labels = data.map(e => new Date(e.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
+  const ctx = document.getElementById('adminDrillDownChart');
+  if (!ctx) return;
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Views', data: data.map(e => e.views), borderColor: '#818cf8', backgroundColor: 'rgba(129,140,248,0.1)', fill: true, tension: 0.3, yAxisID: 'y' },
+        { label: 'Likes', data: data.map(e => e.likes), borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,0.1)', fill: true, tension: 0.3, yAxisID: 'y' },
+        { label: 'Watch Time (m)', data: data.map(e => e.watchTime), borderColor: '#fbbf24', borderDash: [5,5], tension: 0.3, yAxisID: 'y1' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#94a3b8' } } },
+      scales: {
+        y: { type: 'linear', display: true, position: 'left', grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } },
+        y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#fbbf24' } },
+        x: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+      }
+    }
+  });
+});
+</script>
+
+<%- include('partials/footer') %>

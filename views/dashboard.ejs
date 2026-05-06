@@ -1,0 +1,237 @@
+<%- include('partials/header') %>
+
+<!-- Page Header -->
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 animate-fade-in">
+  <div>
+    <h1 class="text-3xl font-bold bg-gradient-to-r from-white via-surface-200 to-surface-400 bg-clip-text text-transparent">
+      Revenue Dashboard
+    </h1>
+    <p class="text-surface-400 mt-1 text-sm">Fair, transparent, manipulation-resistant distribution</p>
+  </div>
+  <div class="flex items-center gap-3">
+    <button onclick="runDetection()" class="btn-secondary" id="btn-detect">
+      <span class="flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        Run Detection
+      </span>
+    </button>
+    <button onclick="runDistribution()" class="btn-primary" id="btn-distribute">
+      <span class="flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Distribute Revenue
+      </span>
+    </button>
+  </div>
+</div>
+
+<!-- Stats Row -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+  <div class="stat-card animate-slide-up" style="animation-delay:0.1s">
+    <div class="flex items-center justify-between">
+      <div class="stat-label">Revenue Pool</div>
+      <div class="w-10 h-10 rounded-xl bg-primary-500/15 flex items-center justify-center">
+        <svg class="w-5 h-5 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+    </div>
+    <div class="stat-value">$<%= latestRevenue ? latestRevenue.totalPool.toLocaleString() : '0' %></div>
+    <div class="text-xs text-surface-500"><%= latestRevenue ? latestRevenue.cycle : 'N/A' %> cycle • <%= latestRevenue ? latestRevenue.status : 'none' %></div>
+  </div>
+
+  <div class="stat-card animate-slide-up" style="animation-delay:0.2s">
+    <div class="flex items-center justify-between">
+      <div class="stat-label">Total Creators</div>
+      <div class="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center">
+        <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      </div>
+    </div>
+    <div class="stat-value"><%= totalCreators %></div>
+    <div class="text-xs text-surface-500"><%= flaggedCount %> flagged for anomalies</div>
+  </div>
+
+  <div class="stat-card animate-slide-up" style="animation-delay:0.3s">
+    <div class="flex items-center justify-between">
+      <div class="stat-label">Total Views</div>
+      <div class="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center">
+        <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+      </div>
+    </div>
+    <div class="stat-value"><%= engagementTotals.totalViews?.toLocaleString() || '0' %></div>
+    <div class="text-xs text-surface-500"><%= engagementTotals.totalRecords || 0 %> engagement records</div>
+  </div>
+
+  <div class="stat-card animate-slide-up" style="animation-delay:0.4s">
+    <div class="flex items-center justify-between">
+      <div class="stat-label">Distributed</div>
+      <div class="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center">
+        <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      </div>
+    </div>
+    <div class="stat-value">$<%= totalDistributed.toLocaleString() %></div>
+    <div class="text-xs text-surface-500"><%= totalDistributions %> distribution cycles</div>
+  </div>
+</div>
+
+<!-- Charts Row -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+  <div class="glass-card p-6 animate-slide-up" style="animation-delay:0.3s">
+    <h2 class="section-title mb-4">
+      <svg class="w-5 h-5 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
+      Engagement Trends
+    </h2>
+    <div class="relative h-64">
+      <canvas id="engagementChart"></canvas>
+    </div>
+  </div>
+  <div class="glass-card p-6 animate-slide-up" style="animation-delay:0.4s">
+    <h2 class="section-title mb-4">
+      <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/></svg>
+      Distribution Weights
+    </h2>
+    <div class="relative h-64">
+      <canvas id="weightsChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Anomaly Alerts -->
+<% if (recentAnomalies.length > 0) { %>
+<div class="glass-card border-red-500/30 p-6 mb-8 animate-slide-up" id="anomaly-alerts">
+  <h2 class="section-title text-red-400 mb-4">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+    Anomaly Alerts (<%= recentAnomalies.length %>)
+  </h2>
+  <div class="grid gap-3">
+    <% recentAnomalies.forEach(function(a) { %>
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 rounded-xl bg-red-500/5 border border-red-500/20">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-red-500/15 flex items-center justify-center flex-shrink-0">
+          <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01"/></svg>
+        </div>
+        <div>
+          <span class="font-semibold text-red-300"><%= a.creatorId ? a.creatorId.name : 'Unknown' %></span>
+          <p class="text-xs text-surface-400 mt-0.5"><%= a.reason %></p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="badge-<%= a.severity === 'critical' ? 'danger' : a.severity === 'high' ? 'warning' : 'info' %>">
+          <%= a.severity %> • Score: <%= a.anomalyScore %>
+        </span>
+        <span class="text-xs text-surface-500"><%= new Date(a.createdAt).toLocaleDateString() %></span>
+      </div>
+    </div>
+    <% }); %>
+  </div>
+</div>
+<% } %>
+
+<!-- Creator Leaderboard -->
+<div class="glass-card animate-slide-up mb-8" style="animation-delay:0.5s">
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 pb-0">
+    <h2 class="section-title">
+      <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+      Creator Leaderboard
+    </h2>
+    <div class="flex items-center gap-2">
+      <input type="text" id="creator-search" placeholder="Search creators..." class="input-field w-48" onkeyup="filterCreators(this.value)">
+    </div>
+  </div>
+  <div class="p-6 overflow-x-auto">
+    <table class="data-table" id="creator-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Creator</th>
+          <th>Status</th>
+          <th>Trust Score</th>
+          <th>Total Earnings</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% creators.forEach(function(c, i) { %>
+        <tr class="creator-row <%= c.status === 'flagged' ? 'bg-red-500/5' : '' %>" data-name="<%= c.name.toLowerCase() %>">
+          <td class="font-mono text-surface-500"><%= i + 1 %></td>
+          <td>
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500/30 to-purple-500/30 flex items-center justify-center text-sm font-bold text-white">
+                <%= c.name.charAt(0).toUpperCase() %>
+              </div>
+              <div>
+                <div class="font-semibold text-white"><%= c.name %></div>
+                <div class="text-xs text-surface-500"><%= c.email %></div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="badge-<%= c.status === 'active' ? 'success' : c.status === 'flagged' ? 'danger' : 'warning' %>">
+              <%= c.status %>
+            </span>
+          </td>
+          <td>
+            <div class="flex items-center gap-2">
+              <div class="w-16 h-1.5 rounded-full bg-surface-700 overflow-hidden">
+                <div class="h-full rounded-full transition-all duration-500 <%= c.trustScore >= 80 ? 'bg-emerald-400' : c.trustScore >= 50 ? 'bg-amber-400' : 'bg-red-400' %>" style="width: <%= c.trustScore %>%"></div>
+              </div>
+              <span class="text-sm font-mono <%= c.trustScore >= 80 ? 'text-emerald-400' : c.trustScore >= 50 ? 'text-amber-400' : 'text-red-400' %>"><%= c.trustScore %></span>
+            </div>
+          </td>
+          <td class="font-mono font-semibold text-emerald-400">$<%= c.totalEarnings.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) %></td>
+          <td>
+            <a href="/dashboard/creator/<%= c._id %>" class="text-primary-400 hover:text-primary-300 text-sm font-medium transition-colors">View →</a>
+          </td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+    <% if (creators.length === 0) { %>
+    <div class="text-center py-12 text-surface-500">
+      <p class="text-lg mb-2">No creators yet</p>
+      <p class="text-sm">Use the API to add creators and engagement data</p>
+    </div>
+    <% } %>
+  </div>
+</div>
+
+<!-- Latest Distribution -->
+<% if (latestDistribution) { %>
+<div class="glass-card animate-slide-up" style="animation-delay:0.6s">
+  <div class="p-6 pb-0">
+    <h2 class="section-title mb-1">
+      <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+      Latest Distribution
+    </h2>
+    <p class="text-xs text-surface-500 mb-4">Pool: $<%= latestDistribution.totalPool.toLocaleString() %> • <%= new Date(latestDistribution.distributedAt).toLocaleDateString() %> • <%= latestDistribution.totalCreators %> creators</p>
+  </div>
+  <div class="p-6 pt-0 overflow-x-auto">
+    <table class="data-table">
+      <thead>
+        <tr><th>Creator</th><th>Raw Score</th><th>Penalty</th><th>Adjusted</th><th>Payout</th><th>Share</th></tr>
+      </thead>
+      <tbody>
+        <% latestDistribution.payouts.sort((a,b) => b.payout - a.payout).forEach(function(p) { %>
+        <tr class="<%= p.penaltyApplied > 0 ? 'bg-red-500/5' : '' %>">
+          <td class="font-semibold"><%= p.creatorId ? p.creatorId.name : 'N/A' %></td>
+          <td class="font-mono text-sm"><%= p.rawScore.toFixed(3) %></td>
+          <td>
+            <% if (p.penaltyApplied > 0) { %>
+            <span class="badge-danger">-<%= p.penaltyApplied %>%</span>
+            <% } else { %>
+            <span class="badge-success">None</span>
+            <% } %>
+          </td>
+          <td class="font-mono text-sm"><%= p.adjustedScore.toFixed(3) %></td>
+          <td class="font-mono font-semibold text-emerald-400">$<%= p.payout.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) %></td>
+          <td class="font-mono text-sm text-surface-300"><%= p.percentage %>%</td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+</div>
+<% } %>
+
+<!-- Hidden data for charts -->
+<script id="timeline-data" type="application/json"><%- JSON.stringify(engagementTimeline) %></script>
+<script id="weights-data" type="application/json"><%- JSON.stringify(latestRevenue ? latestRevenue.distributionRules : {views:0.3,likes:0.25,shares:0.2,watchTime:0.25}) %></script>
+
+<%- include('partials/footer') %>

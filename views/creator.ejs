@@ -1,0 +1,148 @@
+<%- include('partials/header') %>
+
+<div class="mb-6 animate-fade-in">
+  <a href="/dashboard" class="text-sm text-surface-400 hover:text-primary-400 transition-colors flex items-center gap-1">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+    Back to Dashboard
+  </a>
+</div>
+
+<!-- Creator Header -->
+<div class="glass-card p-6 mb-8 animate-slide-up">
+  <div class="flex flex-col sm:flex-row items-start sm:items-center gap-5">
+    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-purple-500 flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-primary-500/25">
+      <%= creator.name.charAt(0).toUpperCase() %>
+    </div>
+    <div class="flex-1">
+      <div class="flex items-center gap-3 mb-1">
+        <h1 class="text-2xl font-bold text-white"><%= creator.name %></h1>
+        <span class="badge-<%= creator.status === 'active' ? 'success' : creator.status === 'flagged' ? 'danger' : 'warning' %>"><%= creator.status %></span>
+      </div>
+      <p class="text-surface-400 text-sm"><%= creator.email %></p>
+    </div>
+    <div class="flex items-center gap-6 text-center">
+      <div>
+        <div class="text-2xl font-bold text-emerald-400">$<%= creator.totalEarnings.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) %></div>
+        <div class="text-xs text-surface-500 uppercase tracking-wider">Total Earnings</div>
+      </div>
+      <div>
+        <div class="text-2xl font-bold <%= creator.trustScore >= 80 ? 'text-emerald-400' : creator.trustScore >= 50 ? 'text-amber-400' : 'text-red-400' %>"><%= creator.trustScore %></div>
+        <div class="text-xs text-surface-500 uppercase tracking-wider">Trust Score</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+  <div class="stat-card animate-slide-up" style="animation-delay:0.1s">
+    <div class="stat-label">Total Views</div>
+    <div class="stat-value text-2xl"><%= totals.totalViews?.toLocaleString() || '0' %></div>
+  </div>
+  <div class="stat-card animate-slide-up" style="animation-delay:0.15s">
+    <div class="stat-label">Total Likes</div>
+    <div class="stat-value text-2xl"><%= totals.totalLikes?.toLocaleString() || '0' %></div>
+  </div>
+  <div class="stat-card animate-slide-up" style="animation-delay:0.2s">
+    <div class="stat-label">Total Shares</div>
+    <div class="stat-value text-2xl"><%= totals.totalShares?.toLocaleString() || '0' %></div>
+  </div>
+  <div class="stat-card animate-slide-up" style="animation-delay:0.25s">
+    <div class="stat-label">Watch Time (hrs)</div>
+    <div class="stat-value text-2xl"><%= totals.totalWatchTime ? (totals.totalWatchTime / 60).toFixed(1) : '0' %></div>
+  </div>
+</div>
+
+<!-- Engagement Chart -->
+<div class="glass-card p-6 mb-8 animate-slide-up" style="animation-delay:0.3s">
+  <h2 class="section-title mb-4">
+    <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4"/></svg>
+    Engagement History
+  </h2>
+  <div class="h-64"><canvas id="creatorEngagementChart"></canvas></div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+  <!-- Anomalies -->
+  <div class="glass-card p-6 animate-slide-up" style="animation-delay:0.35s">
+    <h2 class="section-title mb-4">
+      <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+      Anomaly Flags
+    </h2>
+    <% if (anomalies.length === 0) { %>
+    <div class="text-center py-8 text-surface-500"><p>No anomalies detected</p></div>
+    <% } else { %>
+    <div class="space-y-3 max-h-80 overflow-y-auto">
+      <% anomalies.forEach(function(a) { %>
+      <div class="p-3 rounded-xl bg-red-500/5 border border-red-500/15">
+        <div class="flex items-center justify-between mb-1">
+          <span class="badge-<%= a.severity === 'critical' ? 'danger' : a.severity === 'high' ? 'warning' : 'info' %>"><%= a.severity %></span>
+          <span class="text-xs text-surface-500"><%= new Date(a.createdAt).toLocaleDateString() %></span>
+        </div>
+        <p class="text-xs text-surface-300 mt-1"><%= a.reason %></p>
+        <div class="text-xs text-surface-500 mt-1">Score: <span class="text-red-400 font-mono"><%= a.anomalyScore %></span></div>
+      </div>
+      <% }); %>
+    </div>
+    <% } %>
+  </div>
+
+  <!-- Payout History -->
+  <div class="glass-card p-6 animate-slide-up" style="animation-delay:0.4s">
+    <h2 class="section-title mb-4">
+      <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 1v8m0 0v1"/></svg>
+      Payout History
+    </h2>
+    <% if (creatorPayouts.length === 0) { %>
+    <div class="text-center py-8 text-surface-500"><p>No payouts yet</p></div>
+    <% } else { %>
+    <div class="space-y-3 max-h-80 overflow-y-auto">
+      <% creatorPayouts.forEach(function(p) { %>
+      <div class="p-3 rounded-xl bg-surface-700/30 border border-surface-700/50">
+        <div class="flex items-center justify-between">
+          <span class="font-mono font-semibold text-emerald-400">$<%= p.payout.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) %></span>
+          <span class="text-xs text-surface-500"><%= new Date(p.date).toLocaleDateString() %></span>
+        </div>
+        <div class="flex gap-3 mt-1 text-xs text-surface-400">
+          <span>Pool: $<%= p.totalPool.toLocaleString() %></span>
+          <span>Share: <%= p.percentage %>%</span>
+          <% if (p.penaltyApplied > 0) { %><span class="text-red-400">Penalty: -<%= p.penaltyApplied %>%</span><% } %>
+        </div>
+      </div>
+      <% }); %>
+    </div>
+    <% } %>
+  </div>
+</div>
+
+<script id="creator-engagement-data" type="application/json"><%- JSON.stringify(engagements) %></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const raw = JSON.parse(document.getElementById('creator-engagement-data').textContent);
+  const data = raw.reverse();
+  const labels = data.map(e => new Date(e.timestamp).toLocaleDateString());
+  const ctx = document.getElementById('creatorEngagementChart');
+  if (!ctx) return;
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Views', data: data.map(e => e.views), borderColor: '#818cf8', backgroundColor: 'rgba(129,140,248,0.1)', fill: true, tension: 0.4 },
+        { label: 'Likes', data: data.map(e => e.likes), borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,0.1)', fill: true, tension: 0.4 },
+        { label: 'Shares', data: data.map(e => e.shares), borderColor: '#fbbf24', backgroundColor: 'rgba(251,191,36,0.1)', fill: true, tension: 0.4 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#94a3b8', font: { family: 'Inter' } } } },
+      scales: {
+        x: { ticks: { color: '#64748b', maxTicksLimit: 8 }, grid: { color: 'rgba(51,65,85,0.3)' } },
+        y: { ticks: { color: '#64748b' }, grid: { color: 'rgba(51,65,85,0.3)' } }
+      }
+    }
+  });
+});
+</script>
+
+<%- include('partials/footer') %>

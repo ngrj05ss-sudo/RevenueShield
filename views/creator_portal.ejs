@@ -1,0 +1,142 @@
+<%- include('partials/header') %>
+
+<div class="animate-fade-in">
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h1 class="text-3xl font-bold text-white">Welcome back, <%= creator.name %></h1>
+      <p class="text-surface-400 mt-1">Your performance and earnings overview</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="px-4 py-2 bg-surface-900 border border-surface-800 rounded-xl">
+        <span class="text-xs text-surface-500 uppercase tracking-widest font-semibold block mb-0.5">Trust Level</span>
+        <div class="flex items-center gap-2">
+          <div class="w-20 h-1.5 bg-surface-800 rounded-full overflow-hidden">
+            <div class="h-full bg-primary-500" style="width: <%= creator.trustScore %>%"></div>
+          </div>
+          <span class="text-sm font-bold text-white"><%= creator.trustScore %>%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <% if (creator.isFrozen) { %>
+    <div class="mb-8 p-6 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center gap-6 animate-pulse-slow">
+      <div class="w-12 h-12 rounded-xl bg-red-500 flex items-center justify-center shadow-lg shadow-red-500/30">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v2m0-2h2m-2 0H10m11 3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+      <div>
+        <h3 class="text-lg font-bold text-red-400">Revenue Distribution Frozen</h3>
+        <p class="text-sm text-surface-400">Your revenue share has been temporarily suspended by an administrator due to suspicious activity (Risk Score: <%= creator.maliciousScore %>). Please contact support for a detailed audit review.</p>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- Stats Grid -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="stat-card">
+      <div class="stat-label">Lifetime Earnings</div>
+      <div class="stat-value text-emerald-400">$<%= creator.totalEarnings.toLocaleString() %></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Views</div>
+      <div class="stat-value text-white"><%= totals.totalViews.toLocaleString() %></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Engagement Score</div>
+      <% let engScore = (totals.totalLikes + totals.totalShares) / (totals.totalViews || 1) * 100; %>
+      <div class="stat-value text-blue-400"><%= engScore.toFixed(1) %>%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Status</div>
+      <div class="stat-value text-white text-xl"><span class="badge-<%= creator.status === 'active' ? 'success' : 'danger' %>"><%= creator.status %></span></div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <!-- Engagement Chart -->
+    <div class="glass-card p-6 lg:col-span-2">
+      <h2 class="section-title mb-4">My Growth</h2>
+      <div class="h-72"><canvas id="creatorEngagementChart"></canvas></div>
+    </div>
+
+    <!-- Payout History -->
+    <div class="glass-card p-6">
+      <h2 class="section-title mb-4">Payout History</h2>
+      <div class="space-y-4 max-h-72 overflow-y-auto pr-2">
+        <% if (creatorPayouts.length === 0) { %>
+          <p class="text-surface-500 text-center py-10">No payouts yet</p>
+        <% } %>
+        <% creatorPayouts.forEach(function(p) { %>
+          <div class="p-3 rounded-xl bg-surface-900 border border-surface-800">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs text-surface-500"><%= new Date(p.date).toLocaleDateString() %></span>
+              <span class="font-bold text-emerald-400">$<%= p.payout.toLocaleString() %></span>
+            </div>
+            <div class="flex items-center justify-between text-[10px]">
+              <span class="text-surface-400">Share: <%= p.percentage %>%</span>
+              <% if (p.penaltyApplied > 0) { %>
+                <span class="text-red-400 font-semibold">Penalty: -<%= p.penaltyApplied %>%</span>
+              <% } %>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Content Logs (Dummy labels for visualization) -->
+  <div class="glass-card">
+    <div class="p-6 pb-0">
+      <h2 class="section-title">Recent Activity Logs</h2>
+    </div>
+    <div class="p-6">
+      <table class="data-table">
+        <thead>
+          <tr><th>Date</th><th>Views</th><th>Likes</th><th>Shares</th><th>Watch Time</th></tr>
+        </thead>
+        <tbody>
+          <% engagements.slice(0, 10).forEach(function(e) { %>
+          <tr>
+            <td class="text-xs text-surface-500"><%= new Date(e.timestamp).toLocaleString() %></td>
+            <td class="font-mono text-sm"><%= e.views.toLocaleString() %></td>
+            <td class="font-mono text-sm"><%= e.likes.toLocaleString() %></td>
+            <td class="font-mono text-sm"><%= e.shares.toLocaleString() %></td>
+            <td class="font-mono text-sm"><%= (e.watchTime / 60).toFixed(1) %>h</td>
+          </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script id="creator-engagement-data" type="application/json"><%- JSON.stringify(engagements) %></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const raw = JSON.parse(document.getElementById('creator-engagement-data').textContent);
+  const data = raw.reverse();
+  const labels = data.map(e => new Date(e.timestamp).toLocaleDateString());
+  const ctx = document.getElementById('creatorEngagementChart');
+  if (!ctx) return;
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Views', data: data.map(e => e.views), borderColor: '#818cf8', backgroundColor: 'rgba(129,140,248,0.1)', fill: true, tension: 0.4 },
+        { label: 'Likes', data: data.map(e => e.likes), borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,0.1)', fill: true, tension: 0.4 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#94a3b8', font: { family: 'Inter' } } } },
+      scales: {
+        x: { ticks: { color: '#64748b', maxTicksLimit: 8 }, grid: { color: 'rgba(51,65,85,0.1)' } },
+        y: { ticks: { color: '#64748b' }, grid: { color: 'rgba(51,65,85,0.1)' } }
+      }
+    }
+  });
+});
+</script>
+
+<%- include('partials/footer') %>

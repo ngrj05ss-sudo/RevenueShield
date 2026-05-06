@@ -1,0 +1,186 @@
+<%- include('partials/header') %>
+
+<!-- Admin Header -->
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 animate-fade-in">
+  <div>
+    <h1 class="text-3xl font-bold bg-gradient-to-r from-white via-surface-200 to-surface-400 bg-clip-text text-transparent">
+      Admin Command Center
+    </h1>
+    <p class="text-surface-400 mt-1 text-sm">Monitoring platform health and distribution integrity</p>
+  </div>
+  <div class="flex items-center gap-3">
+    <button onclick="runDetection()" class="btn-secondary" id="btn-detect">
+      <span class="flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        Audit Anomalies
+      </span>
+    </button>
+    <button onclick="runDistribution()" class="btn-primary" id="btn-distribute">
+      <span class="flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Distribute Revenue
+      </span>
+    </button>
+  </div>
+</div>
+
+<!-- Stats Row -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+  <div class="stat-card">
+    <div class="stat-label">Pending Pool</div>
+    <div class="stat-value">$<%= latestRevenue ? latestRevenue.totalPool.toLocaleString() : '0' %></div>
+    <div class="text-xs text-primary-400 mt-1">Rules: V(<%= (latestRevenue.distributionRules.views * 100).toFixed(0) %>%) L(<%= (latestRevenue.distributionRules.likes * 100).toFixed(0) %>%)</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">System Flagged</div>
+    <div class="stat-value text-red-400"><%= flaggedCount %></div>
+    <div class="text-xs text-surface-500 mt-1">Requires admin review</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Avg. Trust Score</div>
+    <% 
+      let avgTrust = creators.reduce((acc, c) => acc + c.trustScore, 0) / creators.length;
+    %>
+    <div class="stat-value <%= avgTrust >= 80 ? 'text-emerald-400' : 'text-amber-400' %>"><%= avgTrust.toFixed(1) %></div>
+    <div class="text-xs text-surface-500 mt-1">Global platform health</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Total Volume</div>
+    <div class="stat-value text-blue-400">$<%= totalDistributed.toLocaleString() %></div>
+    <div class="text-xs text-surface-500 mt-1">Lifetime distribution</div>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+  <div class="glass-card p-6">
+    <h2 class="section-title mb-4">Platform Engagement Trends</h2>
+    <div class="h-64"><canvas id="engagementChart"></canvas></div>
+  </div>
+  <div class="glass-card p-6">
+    <h2 class="section-title mb-4">Distribution Weights</h2>
+    <div class="h-64"><canvas id="weightsChart"></canvas></div>
+  </div>
+</div>
+
+<!-- Anomaly Alert Banner (Admin Exclusive) -->
+<% if (recentAnomalies.length > 0) { %>
+<div class="glass-card border-red-500/30 p-6 mb-8 bg-red-500/5">
+  <h2 class="section-title text-red-400 mb-4 flex items-center gap-2">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+    Critical Anomalies Detected
+  </h2>
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+    <% recentAnomalies.forEach(function(a) { %>
+    <div class="p-3 rounded-xl bg-surface-900/50 border border-red-500/20 hover:border-red-500/50 transition-all">
+      <div class="flex items-center justify-between mb-2">
+        <span class="font-bold text-white"><%= a.creatorId ? a.creatorId.name : 'Unknown' %></span>
+        <span class="badge-danger">Score: <%= a.anomalyScore %></span>
+      </div>
+      <p class="text-[10px] text-surface-400 leading-tight mb-2"><%= a.reason %></p>
+      <div class="flex items-center justify-between">
+        <span class="text-[10px] text-surface-500"><%= new Date(a.createdAt).toLocaleTimeString() %></span>
+        <a href="/dashboard/admin/creator/<%= a.creatorId._id %>?admin=true" class="text-[10px] text-primary-400 hover:underline">Investigate →</a>
+      </div>
+    </div>
+    <% }); %>
+  </div>
+</div>
+<% } %>
+
+<!-- Creator Monitoring List -->
+<div class="glass-card mb-8">
+  <div class="p-6 pb-0 flex items-center justify-between">
+    <h2 class="section-title">Global Creator Monitoring</h2>
+    <input type="text" id="creator-search" placeholder="Search..." class="input-field w-48 py-1.5" onkeyup="filterCreators(this.value)">
+  </div>
+  <div class="p-6">
+    <table class="data-table" id="creator-table">
+      <thead>
+        <tr><th>Creator</th><th>Status</th><th>Risk</th><th>Trust</th><th>Total Earnings</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        <% creators.forEach(function(c) { %>
+        <tr class="creator-row" data-name="<%= c.name.toLowerCase() %>">
+          <td>
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-surface-700 flex items-center justify-center text-xs font-bold text-white"><%= c.name.charAt(0) %></div>
+              <div>
+                <div class="font-medium text-sm text-white"><%= c.name %></div>
+                <div class="text-[10px] text-surface-500"><%= c.email %></div>
+              </div>
+            </div>
+          </td>
+          <td><span class="badge-<%= c.isFrozen ? 'danger' : (c.status === 'active' ? 'success' : 'danger') %> text-[10px]"><%= c.isFrozen ? 'Frozen' : c.status %></span></td>
+          <td>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-mono font-bold <%= c.maliciousScore > 50 ? 'text-red-400' : 'text-surface-500' %>"><%= c.maliciousScore %>%</span>
+            </div>
+          </td>
+          <td>
+            <div class="flex items-center gap-2">
+              <div class="w-12 h-1 bg-surface-800 rounded-full overflow-hidden">
+                <div class="h-full bg-primary-500" style="width: <%= c.trustScore %>%"></div>
+              </div>
+              <span class="text-xs font-mono"><%= c.trustScore %></span>
+            </div>
+          </td>
+          <td class="font-mono text-emerald-400 text-sm">$<%= c.totalEarnings.toLocaleString() %></td>
+          <td><a href="/dashboard/admin/creator/<%= c._id %>?admin=true" class="text-xs text-primary-400 hover:text-white transition-colors">Drill-Down →</a></td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+</div>
+<!-- Admin Management (Admin Only Section) -->
+<div class="glass-card mb-8 border-primary-500/20">
+  <div class="p-6">
+    <h2 class="section-title mb-4 flex items-center gap-2">
+      <svg class="w-5 h-5 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+      Admin Management
+    </h2>
+    <div class="flex flex-col md:flex-row items-end gap-4">
+      <div class="flex-1">
+        <label class="block text-[10px] text-surface-500 uppercase font-bold mb-1 ml-1">New Admin Email</label>
+        <input type="email" id="new-admin-email" placeholder="admin@example.com" class="input-field py-2 text-sm">
+      </div>
+      <div class="flex-1">
+        <label class="block text-[10px] text-surface-500 uppercase font-bold mb-1 ml-1">Temporary Password</label>
+        <input type="password" id="new-admin-password" placeholder="••••••••" class="input-field py-2 text-sm">
+      </div>
+      <button onclick="createAdmin()" class="btn-secondary whitespace-nowrap h-10">Create Admin</button>
+    </div>
+    <p class="text-[10px] text-surface-600 mt-3 italic">* Admins have full access to platform metrics and distribution controls.</p>
+  </div>
+</div>
+
+<script>
+async function createAdmin() {
+  const email = document.getElementById('new-admin-email').value;
+  const password = document.getElementById('new-admin-password').value;
+  if (!email || !password) return alert('Please fill all fields');
+  
+  try {
+    const res = await fetch('/auth/admin/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert('Admin created successfully!');
+      location.reload();
+    } else {
+      alert(data.message || 'Error creating admin');
+    }
+  } catch (err) {
+    alert('Network error');
+  }
+}
+</script>
+
+<script id="timeline-data" type="application/json"><%- JSON.stringify(engagementTimeline) %></script>
+<script id="weights-data" type="application/json"><%- JSON.stringify(latestRevenue ? latestRevenue.distributionRules : {views:0.3,likes:0.25,shares:0.2,watchTime:0.25}) %></script>
+
+<%- include('partials/footer') %>
