@@ -88,7 +88,89 @@
 </div>
 <% } %>
 
+
+<!-- Revenue Pool Configuration & Latest Distribution -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+  <!-- Configuration Panel -->
+  <div class="glass-card p-6 border-primary-500/20">
+    <h2 class="section-title mb-4 flex items-center gap-2">
+      <svg class="w-5 h-5 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      Revenue Pool Configuration
+    </h2>
+    <form id="config-form" class="space-y-4">
+      <input type="hidden" id="revenue-id" value="<%= latestRevenue ? latestRevenue._id : '' %>">
+      <div>
+        <label class="block text-[10px] text-surface-500 uppercase font-bold mb-1 ml-1">Total Pool Amount ($)</label>
+        <input type="number" id="config-pool" value="<%= latestRevenue ? latestRevenue.totalPool : 0 %>" class="input-field py-2 text-sm font-mono">
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-[10px] text-surface-500 uppercase font-bold mb-1 ml-1">Views Weight (0-1)</label>
+          <input type="number" step="0.01" id="weight-views" value="<%= latestRevenue ? latestRevenue.distributionRules.views : 0.4 %>" class="input-field py-2 text-sm font-mono">
+        </div>
+        <div>
+          <label class="block text-[10px] text-surface-500 uppercase font-bold mb-1 ml-1">Likes Weight (0-1)</label>
+          <input type="number" step="0.01" id="weight-likes" value="<%= latestRevenue ? latestRevenue.distributionRules.likes : 0.2 %>" class="input-field py-2 text-sm font-mono">
+        </div>
+        <div>
+          <label class="block text-[10px] text-surface-500 uppercase font-bold mb-1 ml-1">Shares Weight (0-1)</label>
+          <input type="number" step="0.01" id="weight-shares" value="<%= latestRevenue ? latestRevenue.distributionRules.shares : 0.1 %>" class="input-field py-2 text-sm font-mono">
+        </div>
+        <div>
+          <label class="block text-[10px] text-surface-500 uppercase font-bold mb-1 ml-1">Watch Time Weight (0-1)</label>
+          <input type="number" step="0.01" id="weight-watchTime" value="<%= latestRevenue ? latestRevenue.distributionRules.watchTime : 0.3 %>" class="input-field py-2 text-sm font-mono">
+        </div>
+      </div>
+      <div class="flex items-center justify-between pt-2">
+        <span id="weight-total" class="text-[10px] font-bold text-surface-500">Total Weight: 1.00</span>
+        <button type="button" onclick="updatePoolConfig()" class="btn-primary py-2 px-6 text-sm">Save Rules</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Latest Distribution Summary -->
+  <div class="glass-card p-6 overflow-hidden">
+    <h2 class="section-title mb-4 flex items-center gap-2">
+      <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      Latest Distribution Summary
+    </h2>
+    <div class="overflow-x-auto max-h-72">
+      <% if (latestDistribution) { %>
+      <table class="w-full text-left text-[11px]">
+        <thead class="border-b border-surface-800 text-surface-500 uppercase">
+          <tr><th class="py-2">Creator</th><th class="py-2">Penalty</th><th class="py-2">Payout</th><th class="py-2">Share</th></tr>
+        </thead>
+        <tbody class="divide-y divide-surface-800/50">
+          <% latestDistribution.payouts.sort((a,b) => b.payout - a.payout).slice(0, 8).forEach(function(p) { %>
+          <tr class="<%= p.penaltyApplied > 0 ? 'text-red-300' : 'text-surface-200' %>">
+            <td class="py-2 font-medium"><%= p.creatorId ? p.creatorId.name : 'N/A' %></td>
+            <td class="py-2">
+              <% if (p.penaltyApplied > 0) { %>
+                <span class="text-red-400 font-bold">-<%= p.penaltyApplied %>%</span>
+              <% } else { %>
+                <span class="text-emerald-500">None</span>
+              <% } %>
+            </td>
+            <td class="py-2 font-mono font-bold text-emerald-400">$<%= p.payout.toLocaleString() %></td>
+            <td class="py-2 font-mono"><%= p.percentage %>%</td>
+          </tr>
+          <% }); %>
+        </tbody>
+      </table>
+      <% if (latestDistribution.payouts.length > 8) { %>
+        <p class="text-[10px] text-center text-surface-500 mt-2">Showing top 8 of <%= latestDistribution.payouts.length %> creators</p>
+      <% } %>
+      <% } else { %>
+        <div class="h-full flex items-center justify-center py-12 text-surface-600">
+          <p>No distributions recorded yet</p>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
 <!-- Creator Monitoring List -->
+
 <div class="glass-card mb-8">
   <div class="p-6 pb-0 flex items-center justify-between">
     <h2 class="section-title">Global Creator Monitoring</h2>
@@ -178,6 +260,56 @@ async function createAdmin() {
     alert('Network error');
   }
 }
+
+async function updatePoolConfig() {
+  const id = document.getElementById('revenue-id').value;
+  const totalPool = parseFloat(document.getElementById('config-pool').value);
+  const distributionRules = {
+    views: parseFloat(document.getElementById('weight-views').value),
+    likes: parseFloat(document.getElementById('weight-likes').value),
+    shares: parseFloat(document.getElementById('weight-shares').value),
+    watchTime: parseFloat(document.getElementById('weight-watchTime').value)
+  };
+
+  const totalWeight = Object.values(distributionRules).reduce((a, b) => a + b, 0);
+  if (Math.abs(totalWeight - 1.0) > 0.001) {
+    if (!confirm(`Warning: Total weights sum to ${totalWeight.toFixed(2)}, not 1.00. Continue?`)) return;
+  }
+
+  try {
+    const method = id ? 'PUT' : 'POST';
+    const url = id ? `/api/revenue/${id}` : '/api/revenue';
+    
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ totalPool, distributionRules })
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert('Configuration updated successfully!');
+      location.reload();
+    } else {
+      alert(data.message || 'Error updating configuration');
+    }
+  } catch (err) {
+    alert('Network error');
+  }
+}
+
+// Live weight total tracking
+document.querySelectorAll('#config-form input[type="number"]').forEach(input => {
+  input.addEventListener('input', () => {
+    const views = parseFloat(document.getElementById('weight-views').value) || 0;
+    const likes = parseFloat(document.getElementById('weight-likes').value) || 0;
+    const shares = parseFloat(document.getElementById('weight-shares').value) || 0;
+    const watchTime = parseFloat(document.getElementById('weight-watchTime').value) || 0;
+    const total = views + likes + shares + watchTime;
+    const el = document.getElementById('weight-total');
+    el.textContent = `Total Weight: ${total.toFixed(2)}`;
+    el.className = `text-[10px] font-bold ${Math.abs(total - 1.0) < 0.001 ? 'text-emerald-400' : 'text-red-400'}`;
+  });
+});
 </script>
 
 <script id="timeline-data" type="application/json"><%- JSON.stringify(engagementTimeline) %></script>
